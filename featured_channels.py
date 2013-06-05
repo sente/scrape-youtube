@@ -1,10 +1,17 @@
+# -*- coding: utf-8 -*-
+
 import lxml
 import lxml.html
+import os
 import sys
 
 
-def get_featured_channels(filename):
-    root = lxml.html.fromstring(open(filename).read())
+def get_featured_channels(filename_or_html):
+    if os.path.isfile(filename_or_html):
+        root = lxml.html.fromstring(open(filename_or_html).read())
+    else:
+        root = lxml.html.fromstring(filename_or_html)
+
 
     div = None
     for h2 in root.xpath('//h2'):
