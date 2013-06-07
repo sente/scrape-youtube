@@ -3,31 +3,40 @@
 import lxml
 import lxml.html
 import requests
+import base64
 import sys
 import os
-
+from collections import deque
 
 
 
 class YouTubeUser(object):
 
     content = None
-
+    page = None
 
     def __init__(self, *args, **kwargs):
 
         assert(len(args) == 1)
         parm = args[0]
+        self.page = parm
         if os.path.isfile(parm):
             content = self._from_file(parm)
         elif parm.startswith('http://') or parm.startswith('https://'): 
             content = self._from_web(parm)
         else:
-            sys.stderr.write("error: invalid call\n")
-
+            parm = "http://www.youtube.com/user/%s/about" % parm
+            content = self._from_web(parm)
         self.content = content
 
+        self._process_user()
 
+    def _process_user(self):
+        self.get_featured_channels()
+        open('data/%s.txt' % self.page, 'w').write('\n'.join(self.featured_channels) + '\n')
+        with open('data/%s.dat' % self.page.lower(), 'w') as ofile:
+            for fc in self.featured_channels:
+                ofile.write("%s\t%s\n" % (self.page.lower(), fc.lower()))
 
     def get_featured_channels(self):
 
@@ -47,9 +56,10 @@ class YouTubeUser(object):
         for a in div.xpath('.//ul/li/a'):
             featured_channels.append(a.get('href'))
 
-        for img in div.xpath('.//img[@class="yt-uix-button-icon yt-uix-button-icon-subscribe"]'):
-            print img.get('alt')
+        #for img in div.xpath('.//img[@class="yt-uix-button-icon yt-uix-button-icon-subscribe"]'):
+        #    print img.get('alt')
 
+        featured_channels = [f.split('/')[-1] for f in featured_channels]
         self.featured_channels = featured_channels
         return featured_channels
 
@@ -100,12 +110,42 @@ class YouTubeUser(object):
     def _from_web(self, arg):
 
         sys.stderr.write("_from_web(\"%s\")\n" % arg)
+
+        # check if we've already cached this page...
+        # if so, return the cached page
+        cachestr = base64.encodestring(arg).strip()
+        if os.path.isfile("cache/%s" % cachestr):
+            sys.stderr.write("from_cache: %s\n" % cachestr)
+            return open("cache/%s" % cachestr, "r").read()
+
+        # fetch, cache & return the page...
         content = requests.get(arg).content
+
+        sys.stderr.write("%s cached: %s\n" % (arg, cachestr))
+        open("cache/%s" % cachestr, "w").write(content)
         return content
+
+
 
 
 
 if __name__ == '__main__':
 
-    a = YouTubeUser("http://www.youtube.com/user/ajannasmom/about")
+    #a = YouTubeUser("http://www.youtube.com/user/ajannasmom/about")
+    users = open('vloggers.txt').read().strip().split('\n')
+
+    q = deque(users)
+    seen = set()
+
+    yts = {}
+    while q:
+        sys.stderr.write("\n%d items in queue\t%d items in yts\n" % (len(q),len(yts)))
+        name = q.popleft()
+        if name in seen:
+            sys.stderr.write("already seen %s\n" % name)
+            continue
+        y = YouTubeUser(name)
+        yts[name] = y
+        seen.add(name)
+        q.extend(y.featured_channels)
 
