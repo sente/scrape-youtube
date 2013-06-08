@@ -6,6 +6,7 @@ import requests
 import base64
 import sys
 import os
+import gzip
 from collections import deque
 
 
@@ -113,16 +114,17 @@ class YouTubeUser(object):
 
         # check if we've already cached this page...
         # if so, return the cached page
-        cachestr = base64.encodestring(arg).strip()
+        cachestr = base64.encodestring(arg).strip() + '.html.gz'
         if os.path.isfile("cache/%s" % cachestr):
             sys.stderr.write("from_cache: %s\n" % cachestr)
-            return open("cache/%s" % cachestr, "r").read()
+            content = gzip.open("cache/%s" % cachestr, "rb").read()
+            return content
 
         # fetch, cache & return the page...
         content = requests.get(arg).content
 
         sys.stderr.write("%s cached: %s\n" % (arg, cachestr))
-        open("cache/%s" % cachestr, "w").write(content)
+        gzip.open("cache/%s" % cachestr, "wb").write(content)
         return content
 
 
