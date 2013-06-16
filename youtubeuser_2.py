@@ -46,7 +46,7 @@ class YouTubeUser(object):
 
         div = None
         for h2 in root.xpath('//h2'):
-            if h2.text_content().strip() == "Featured Channels":
+            if 'Channels' in h2.text_content().strip():
                 div = h2.getparent()
                 break
 
@@ -116,16 +116,16 @@ class YouTubeUser(object):
         # check if we've already cached this page...
         # if so, return the cached page
         cachestr = base64.encodestring(arg).strip() + '.html.gz'
-        if os.path.isfile("cache/%s" % cachestr):
+        if os.path.isfile("cache1/%s" % cachestr):
             #sys.stderr.write("from_cache: %s\n" % cachestr)
-            content = gzip.open("cache/%s" % cachestr, "rb").read()
+            content = gzip.open("cache1/%s" % cachestr, "rb").read()
             return content
 
         # fetch, cache & return the page...
         content = requests.get(arg).content
 
         #sys.stderr.write("%s cached: %s\n" % (arg, cachestr))
-        gzip.open("cache/%s" % cachestr, "wb").write(content)
+        gzip.open("cache1/%s" % cachestr, "wb").write(content)
         return content
 
 
@@ -142,8 +142,9 @@ if __name__ == '__main__':
 
     yts = {}
     while q:
-        sys.stderr.write("\n%d items in queue\t%d items in yts\n" % (len(q),len(yts)))
+        #sys.stderr.write("\n%d items in queue\t%d items in yts\n" % (len(q),len(yts)))
         name = q.popleft()
+        print name
         if name in seen:
             #sys.stderr.write("already seen %s\n" % name)
             continue
@@ -153,7 +154,7 @@ if __name__ == '__main__':
         for fc in y.featured_channels:
             if fc not in seen:
                 sys.stderr.write('adding\t%s -> %s\n' % (name, fc) )
-                q.extend([fc])
+                #q.extend([fc])
             else:
                 sys.stderr.write('ignoring\t%s -> %s\n' % (name, fc))
         #q.extend(y.featured_channels)
