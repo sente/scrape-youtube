@@ -1,4 +1,6 @@
+# -*- coding: utf-8 -*-
 from pattern.web import Spider
+import sys
 
 
 from foo import *
@@ -11,7 +13,6 @@ class Spiderling(Spider):
     def visit(self, link, source=None):
         print 'visited:', repr(link.url), 'from:', link.referrer
 
-
         try:
             self.GRAPH[link.referrer].append(link.url)
         except:
@@ -19,6 +20,13 @@ class Spiderling(Spider):
 
     def fail(self, link):
         print 'failed:', repr(link.url)
+
+    def priority(self, url, method):
+        """
+        this should really be implemented in Spider's __init__()...
+        """
+
+        return 0.0
 
     def follow(self, link):
 
@@ -34,22 +42,22 @@ class Spiderling(Spider):
             self.considered[link.url] = 1
 
         if 'user' in link.url:
-            print 'WILL CRAWL %s' % link.url
             return True
         else:
-            print 'IGNORING  %s' % link.url
             return False
 
-#    def parse(self, html):
-#       return get_links(html)
 
-s = Spiderling(links=['http://www.youtube.com/user/ajannasmom/about'], domains=['www.youtube.com'], delay=0, parser=get_links)
+s = Spiderling(links=['http://www.youtube.com/user/ajannasmom/about'],
+               domains=['www.youtube.com'],
+               parser=get_links,
+               sort="filo",
+               delay=-1)
 
-for i in range(20):
-    print i
-    print s.crawl()
-    print s.GRAPH
-    print '\n\n\n'
+#for i in range(20):
+#    print i
+#    s.crawl(cache=True, throttle=2)
+#    print s.visited
+#    print s._queue
 
 #print s.crawl()
 #print s.crawl()
